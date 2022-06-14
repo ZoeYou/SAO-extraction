@@ -1,8 +1,11 @@
+from turtle import clear
 import spacy 
+import re
 
 # !python -m spacy download fr_dep_news_trf
 nlp = spacy.load('fr_dep_news_trf')
 stopwords = nlp.Defaults.stop_words
+stopwords.add("moyens")
 
 
 def find_mod_subj(token, doc):
@@ -43,6 +46,26 @@ def find_mod_obj(token):
 
     return min(idx), max(idx)
 
+
+def is_valid(subject_trunk, object_trunk):
+    ret = True
+    subject_trunk = subject_trunk.text
+    object_trunk = object_trunk.text
+
+    if (subject_trunk in stopwords or object_trunk in stopwords) or (subject_trunk==object_trunk):
+        ret = False
+    if subject_trunk.isdigit() or object_trunk.isdigit():
+        ret = False
+    return ret
+
+def clean_trunk(noun_trunk):
+    noun_trunk = re.sub("^[1-9]*\.", "", noun_trunk)
+
+    tokens = noun_trunk.split(" ")
+    if tokens[0] == "dont":
+        tokens = tokens[1:]
+    return " ".join(tokens)
+
 def get_SAO_fr(sentence, model=nlp):
     doc = model(sentence)
     res = []
@@ -75,7 +98,9 @@ def get_SAO_fr(sentence, model=nlp):
             
             obj_start, obj_end = find_mod_obj(object)
             object_trunk = doc[obj_start: obj_end+1]
-            res.append((subject_trunk.text, verb.lemma_, object_trunk.text))
+            if is_valid(subject_trunk, object_trunk):
+
+                res.append((clean_trunk(subject_trunk.text), verb.lemma_, clean_trunk(object_trunk.text)))
 
             # check if object has another conjunct object
             conj_tokens = [child for child in object_trunk.root.children if child.dep_=="conj"]
@@ -83,7 +108,8 @@ def get_SAO_fr(sentence, model=nlp):
                 for t in conj_tokens:
                     obj_start, obj_end = find_mod_obj(t)
                     object_trunk = doc[obj_start: obj_end+1]
-                    res.append((subject_trunk.text, verb.lemma_, object_trunk.text))
+                    if is_valid(subject_trunk, object_trunk):
+                        res.append((clean_trunk(subject_trunk.text), verb.lemma_, clean_trunk(object_trunk.text)))
         else:
             continue
     return res
