@@ -5,16 +5,19 @@ import re
 # !python -m spacy download fr_dep_news_trf
 nlp = spacy.load('fr_dep_news_trf')
 stopwords = nlp.Defaults.stop_words
-stopwords.add("moyens")
+
+with open("fr_stopwords.txt") as inf:
+    stopwords_to_append = inf.read().splitlines()
+stopwords.update(stopwords_to_append)
 
 
-def find_mod_subj(token, doc):
+def find_mod_subj(token):
     """
     given the subject token, returns its noun trunk
     """
     idx = [token.i]
 
-    amod_tokens = [child for child in token.children if child.dep_=="amod"]
+    amod_tokens = [child for child in token.children if child.dep_ in["amod","appos"]]
     if amod_tokens:
         idx.extend([t.i for t in amod_tokens])
 
@@ -27,7 +30,14 @@ def find_mod_subj(token, doc):
         while nmod_token.dep_=="nmod":
             nmod_token = nmod_token.head
             idx.append(nmod_token.i)
-    return doc[min(idx): max(idx)+1]
+
+    nmod_tokens = [child for child in token.children if child.dep_=="nmod"]
+    if nmod_tokens:
+        for t in nmod_tokens:
+            index_low, index_high = find_mod_obj(t)
+        idx.extend([index_low, index_high])
+        
+    return min(idx), max(idx)
 
 def find_mod_obj(token):
     """
@@ -46,7 +56,6 @@ def find_mod_obj(token):
 
     return min(idx), max(idx)
 
-
 def is_valid(subject_trunk, object_trunk):
     ret = True
     subject_trunk = subject_trunk.text
@@ -54,12 +63,14 @@ def is_valid(subject_trunk, object_trunk):
 
     if (subject_trunk in stopwords or object_trunk in stopwords) or (subject_trunk==object_trunk):
         ret = False
-    if subject_trunk.isdigit() or object_trunk.isdigit():
+    if not(bool(re.search("[a-zA-Zéàèùâêîôûçëïü]",subject_trunk)) and bool(re.search("[a-zA-Zéàèùâêîôûçëïü]",object_trunk))):
+        ret = False
+    if "quelconque des revendications" in subject_trunk or "quelconque des revendications" in object_trunk:
         ret = False
     return ret
 
 def clean_trunk(noun_trunk):
-    noun_trunk = re.sub("^[1-9]*\.", "", noun_trunk)
+    noun_trunk = re.sub("^[1-9]*\.| \(.*[^)]$", "", noun_trunk)
 
     tokens = noun_trunk.split(" ")
     if tokens[0] == "dont":
@@ -67,6 +78,7 @@ def clean_trunk(noun_trunk):
     return " ".join(tokens)
 
 def get_SAO_fr(sentence, model=nlp):
+    sentence = " ".join([token for token in re.split(":| ", sentence) if token!=""])
     doc = model(sentence)
     res = []
 
@@ -81,8 +93,8 @@ def get_SAO_fr(sentence, model=nlp):
             continue
 
         subject = None
-        # situation 1: acl 
-        if n.head.dep_ == "acl":
+        # situation 1: acl, or conjunct of principle verb 
+        if n.head.dep_ in ["acl", "conj"]:
             subject = n.head.head
             while subject.dep_ == "acl":
                 subject = subject.head
@@ -90,16 +102,19 @@ def get_SAO_fr(sentence, model=nlp):
         # situation 2: nsubj
         else:
             subject_node = [child for child in n.head.children if child.dep_=="nsubj"]
-            if subject_node: subject = subject_node[0]
+            if subject_node: 
+                subject = subject_node[0]
+                if subject.text == "qui" and n.head.dep_=="acl:relcl":
+                    subject = n.head.head
         
         # find noun trunk that includes the subject noun
         if subject:
-            subject_trunk = find_mod_subj(subject, doc)
+            subj_start, subject_end = find_mod_subj(subject)
+            subject_trunk = doc[subj_start: subject_end+1]
             
             obj_start, obj_end = find_mod_obj(object)
             object_trunk = doc[obj_start: obj_end+1]
             if is_valid(subject_trunk, object_trunk):
-
                 res.append((clean_trunk(subject_trunk.text), verb.lemma_, clean_trunk(object_trunk.text)))
 
             # check if object has another conjunct object

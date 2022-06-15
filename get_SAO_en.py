@@ -3,6 +3,9 @@ import spacy
 nlp = spacy.load('en_core_web_sm')
 stopwords = nlp.Defaults.stop_words
 
+with open("en_stopwords.txt") as inf:
+    stopwords_to_append = inf.read().splitlines()
+stopwords.update(stopwords_to_append)
 
 def get_SAO_en(sentence, model=nlp):
     doc = model(sentence)
