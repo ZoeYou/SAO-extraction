@@ -10,6 +10,7 @@ with open("./fr_stopwords.txt") as inf:
    stopwords_to_append = inf.read().splitlines()
 stopwords.update(stopwords_to_append)
 
+KEEP_DETERMINER = True # Whether to keep determiners
 
 def find_mod_subj(token):
     """
@@ -17,7 +18,11 @@ def find_mod_subj(token):
     """
     idx = [token.i]
 
-    amod_tokens = [child for child in token.children if child.dep_ in["amod","appos"]]
+    if KEEP_DETERMINER:
+        amod_tokens = [child for child in token.children if child.dep_ in ["amod","appos",'det']]
+    else:
+        amod_tokens = [child for child in token.children if child.dep_ in ["amod","appos"]]
+
     if amod_tokens:
         idx.extend([t.i for t in amod_tokens])
 
@@ -44,7 +49,11 @@ def find_mod_obj(token):
     given the object token, returns it noun trunk
     """
     idx = [token.i]
-    amod_tokens = [child for child in token.children if child.dep_=="amod"]
+    if KEEP_DETERMINER:
+        amod_tokens = [child for child in token.children if child.dep_ in ["det", "amod"]]
+    else:
+        amod_tokens = [child for child in token.children if child.dep_ == "amod"]
+
     if amod_tokens:
         idx.extend([t.i for t in amod_tokens])
 
@@ -58,14 +67,14 @@ def find_mod_obj(token):
 
 def is_valid(subject_trunk, object_trunk):
     ret = True
-    subject_trunk = subject_trunk.text
-    object_trunk = object_trunk.text
+    subject_trunk_text = subject_trunk.text
+    object_trunk_text = object_trunk.text
 
-    if (subject_trunk in stopwords or object_trunk in stopwords) or (subject_trunk==object_trunk):
+    if (subject_trunk.root.text in stopwords or object_trunk.root.text in stopwords) or (subject_trunk_text==object_trunk_text):
         ret = False
-    if not(bool(re.search("[a-zA-Zéàèùâêîôûçëïü]",subject_trunk)) and bool(re.search("[a-zA-Zéàèùâêîôûçëïü]",object_trunk))):
+    if not(bool(re.search("[a-zA-Zéàèùâêîôûçëïü]",subject_trunk_text)) and bool(re.search("[a-zA-Zéàèùâêîôûçëïü]",object_trunk_text))):
         ret = False
-    if "quelconque des revendications" in subject_trunk or "quelconque des revendications" in object_trunk:
+    if "quelconque des revendications" in subject_trunk_text or "quelconque des revendications" in object_trunk_text:
         ret = False
     return ret
 
