@@ -6,8 +6,8 @@ import re
 nlp = spacy.load('fr_dep_news_trf')
 stopwords = nlp.Defaults.stop_words
 
-with open("fr_stopwords.txt") as inf:
-    stopwords_to_append = inf.read().splitlines()
+with open("./fr_stopwords.txt") as inf:
+   stopwords_to_append = inf.read().splitlines()
 stopwords.update(stopwords_to_append)
 
 
@@ -87,40 +87,55 @@ def get_SAO_fr(sentence, model=nlp):
 
     for n in nouns_obj:
         if n.head.pos_ == "VERB":
-            verb = n.head
+            verbs = [n.head]
             object = n 
+            
+            #if exists conjuncts of principle verb 
+            if n.head.dep_ == "conj" and n.head.head.pos_ == "VERB":
+                verbs.append(n.head.head)
+            verbs.extend([token for token in n.head.children if token.pos_ == "VERB" and token.dep_ == "conj"])
         else:
             continue
 
-        subject = None
-        # situation 1: acl, or conjunct of principle verb 
-        if n.head.dep_ in ["acl", "conj"]:
-            subject = n.head.head
-            while subject.dep_ == "acl":
-                subject = subject.head
+        for verb in verbs:
+            subject = None
+            # situation 1: acl
+            if n.head.dep_ == "acl":
+                subject = n.head.head
+                while subject.dep_ == "acl":
+                    subject = subject.head
 
-        # situation 2: nsubj
-        else:
-            subject_node = [child for child in n.head.children if child.dep_=="nsubj"]
-            if subject_node: 
-                subject = subject_node[0]
-                if subject.text == "qui" and n.head.dep_=="acl:relcl":
-                    subject = n.head.head
-        
-        # find noun trunk that includes the subject noun
-        if subject:
-            subj_start, subject_end = find_mod_subj(subject)
-            subject_trunk = doc[subj_start: subject_end+1]
+            # situation 2: nsubj
+            else:
+                subject_node = [child for child in n.head.children if child.dep_=="nsubj"]
+                if subject_node: 
+                    subject = subject_node[0]
+                    if subject.text == "qui" and n.head.dep_=="acl:relcl":
+                        subject = n.head.head
             
-            obj_start, obj_end = find_mod_obj(object)
-            object_trunk = doc[obj_start: obj_end+1]
-            if is_valid(subject_trunk, object_trunk):
-                res.append((clean_trunk(subject_trunk.text), verb.lemma_, clean_trunk(object_trunk.text)))
+            # find noun trunk that includes the subject noun
+            if subject:
+                subj_start, subject_end = find_mod_subj(subject)
+                subject_trunk = doc[subj_start: subject_end+1]
+                
+                obj_start, obj_end = find_mod_obj(object)
+                object_trunk = doc[obj_start: obj_end+1]
+                if is_valid(subject_trunk, object_trunk):
+                    res.append((clean_trunk(subject_trunk.text), verb.lemma_, clean_trunk(object_trunk.text)))
 
-            # check if object has another conjunct object
-            conj_tokens = [child for child in object_trunk.root.children if child.dep_=="conj"]
-            if conj_tokens:
-                for t in conj_tokens:
+                # check if subject has another conjunct subject
+                conj_subj_tokens = [child for child in subject_trunk.root.children if child.dep_=="conj"]
+  
+                for t in conj_subj_tokens:
+                    subj_start, subject_end = find_mod_subj(t)
+                    subject_trunk = doc[subj_start: subject_end+1]
+                    if is_valid(subject_trunk, object_trunk):
+                        res.append((clean_trunk(subject_trunk.text), verb.lemma_, clean_trunk(object_trunk.text)))
+
+                # check if object has another conjunct object
+                conj_obj_tokens = [child for child in object_trunk.root.children if child.dep_=="conj"]
+
+                for t in conj_obj_tokens:
                     obj_start, obj_end = find_mod_obj(t)
                     object_trunk = doc[obj_start: obj_end+1]
                     if is_valid(subject_trunk, object_trunk):
