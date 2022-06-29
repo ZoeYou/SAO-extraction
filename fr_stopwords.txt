@@ -98,3 +98,5 @@ avais
 quelques
 aurait
 manière
+type
+sorte
