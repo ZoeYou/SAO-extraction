@@ -74,7 +74,7 @@ def is_valid(subject_trunk, object_trunk):
         ret = False
     if not(bool(re.search("[a-zA-Zéàèùâêîôûçëïü]",subject_trunk_text)) and bool(re.search("[a-zA-Zéàèùâêîôûçëïü]",object_trunk_text))):
         ret = False
-    if any(x in object_trunk_text for x in ["quelconque des revendications", "quelconque des revendications", "selon la revendication"])in object_trunk_text or any(x in object_trunk_text for x in ["quelconque des revendications", "quelconque des revendications", "selon la revendication"])in subject_trunk_text:
+    if any(x in object_trunk_text for x in ["quelconque des revendications", "quelconque des revendications", "selon la revendication"]) or any(x in subject_trunk_text for x in ["quelconque des revendications", "quelconque des revendications", "selon la revendication"]):
         ret = False
     return ret
 
