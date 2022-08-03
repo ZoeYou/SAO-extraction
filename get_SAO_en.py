@@ -101,7 +101,6 @@ def get_SAO_en(sentence, model=nlp):
 
                 if (subject not in stopwords and object not in stopwords) and (subject!=object):
                     verb_text = " ".join([w.text for w in doc if (w==verb) or (abs(w.i - verb.i)<=2 and  w.head==verb and w.dep_ in ["auxpass", "prep"])])
-                    print(verb)
                     res.append((subject, verb_text, object))
             
         except IndexError:
