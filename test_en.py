@@ -6,4 +6,6 @@ sents = sent_tokenize(claims, language="english")
 for sent in sents:
     saos = get_SAO_en(sent)
     if saos:
+        print(sent)
         print(saos)
+        print("\n")
