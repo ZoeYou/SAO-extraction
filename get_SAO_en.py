@@ -99,7 +99,11 @@ def get_SAO_en(sentence, model=nlp):
         try:
             prep = [child for child in verb.children if child.dep_ == "prep"][-1]
             pobjs = [child for child in prep.children if child.dep_ == "pobj"]
-            pobjs.extend([child for pobj in pobjs for child in pobj.children if child.dep_=="conj"])
+
+            pobjs_conj = [child for pobj in pobjs for child in pobj.children if child.dep_=="conj"]
+            while pobjs_conj:
+                pobjs.extend(pobjs_conj)
+                pobjs_conj = [child for pobj in pobjs_conj for child in pobj.children if child.dep_=="conj"]
 
             for object in pobjs:
                 try:
