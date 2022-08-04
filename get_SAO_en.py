@@ -56,7 +56,7 @@ def get_SAO_en(sentence, model=nlp):
                 subject = verb.head
 
             try:
-                subject = [n for n in nouns if subject in n][0]
+                subject = [nn for nn in nouns if subject in nn][0]
                 subject = " ".join([w.text for w in subject if w.pos_!="DET"])
             except IndexError:
                 subject = subject.text
@@ -74,7 +74,7 @@ def get_SAO_en(sentence, model=nlp):
         
                 for obj in conj_obj:
                     try:
-                        obj_trunk = [n for n in nouns if obj in n][0]
+                        obj_trunk = [nn for nn in nouns if obj in nn][0]
                         if obj_trunk:
                             objects.append(" ".join([w.text for w in obj_trunk if w.pos_!="DET"]))
                     except IndexError:
@@ -91,7 +91,7 @@ def get_SAO_en(sentence, model=nlp):
         subject = [child for child in verb.children if child.dep_ == "nsubjpass"][-1]
 
         try:
-            subject = [n for n in nouns if subject in n][0]
+            subject = [nn for nn in nouns if subject in nn][0]
             subject = " ".join([w.text for w in subject if w.pos_!="DET"])
         except (IndexError, AttributeError) as e:
             continue
@@ -103,7 +103,7 @@ def get_SAO_en(sentence, model=nlp):
 
             for object in pobjs:
                 try:
-                    object = [n for n in nouns if object in n][0]
+                    object = [nn for nn in nouns if object in nn][0]
                     object = " ".join([w.text for w in object if w.pos_!="DET"])
                 except IndexError:
                    continue 
