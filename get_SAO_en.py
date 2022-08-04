@@ -110,7 +110,7 @@ def get_SAO_en(sentence, model=nlp):
 
                 if (subject not in stopwords and object not in stopwords) and (subject!=object):
                     verb_text = " ".join([w.text for w in doc if (w==verb) or (abs(w.i - verb.i)<=2 and  w.head==verb and w.dep_ in ["auxpass", "prep"])])
-                    verb_text = re.sub("(is|are)","be", verb_text)
+                    verb_text = re.sub("(is|are|being)","be", verb_text)
                     res.append((cleaned_noun_chunk(subject), verb_text, cleaned_noun_chunk(object)))
             
         except IndexError:
