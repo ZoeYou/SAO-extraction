@@ -9,8 +9,6 @@ stopwords.update(stopwords_to_append)
 
 def cleaned_noun_chunk(noun):
     noun_cleaned = re.sub("( comprising$)", "", noun)
-    if noun!=noun_cleaned:
-        print(555555,noun_cleaned)
     return noun_cleaned
 
 
