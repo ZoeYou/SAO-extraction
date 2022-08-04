@@ -7,8 +7,16 @@ with open("US_stopwords.txt") as inf:
     stopwords_to_append = inf.read().splitlines()
 stopwords.update(stopwords_to_append)
 
+def cleaned_noun_chunk(noun):
+    noun_cleaned = re.sub("( comprising$)", "", noun)
+    if noun!=noun_cleaned:
+        print(555555,noun_cleaned)
+    return noun_cleaned
+
 
 def get_SAO_en(sentence, model=nlp):
+    sentence = sentence.replace("said", "the")
+
     doc = model(sentence)
     res = []
 
@@ -67,13 +75,16 @@ def get_SAO_en(sentence, model=nlp):
                     conj_obj_deeper = [child for c in conj_obj_deeper for child in c.children if child.dep_=="conj"]
         
                 for obj in conj_obj:
-                    obj_trunk = [n for n in nouns if obj in n][0]
-                    if obj_trunk:
-                        objects.append(" ".join([w.text for w in obj_trunk if w.pos_!="DET"]))
+                    try:
+                        obj_trunk = [n for n in nouns if obj in n][0]
+                        if obj_trunk:
+                            objects.append(" ".join([w.text for w in obj_trunk if w.pos_!="DET"]))
+                    except IndexError:
+                        continue
 
             for object in objects:
                 if (subject not in stopwords and object not in stopwords) and (subject!=object):
-                    res.append((subject, verb.lemma_, object))
+                    res.append((cleaned_noun_chunk(subject), verb.lemma_, cleaned_noun_chunk(object)))
 
     ############################# PART2 #############################
     # for passive form
@@ -97,12 +108,12 @@ def get_SAO_en(sentence, model=nlp):
                     object = [n for n in nouns if object in n][0]
                     object = " ".join([w.text for w in object if w.pos_!="DET"])
                 except IndexError:
-                    object = object.text
+                   continue 
 
                 if (subject not in stopwords and object not in stopwords) and (subject!=object):
                     verb_text = " ".join([w.text for w in doc if (w==verb) or (abs(w.i - verb.i)<=2 and  w.head==verb and w.dep_ in ["auxpass", "prep"])])
                     verb_text = re.sub("(is|are)","be", verb_text)
-                    res.append((subject, verb_text, object))
+                    res.append((cleaned_noun_chunk(subject), verb_text, cleaned_noun_chunk(object)))
             
         except IndexError:
             continue
