@@ -18,7 +18,7 @@ def get_SAO_en(sentence, model=nlp):
     doc = model(sentence)
     res = []
 
-    # get all noun trunks 
+    # get all noun chunks 
     nouns = [n for n in doc.noun_chunks]
 
     ############################# PART1 #############################
@@ -50,7 +50,7 @@ def get_SAO_en(sentence, model=nlp):
                 if subject_node: 
                     subject = subject_node[-1]
 
-        # find noun trunk that includes the subject noun
+        # find noun chunk that includes the subject noun
         if subject:
             if subject.pos_ == "PRON" and verb.dep_=="relcl":
                 subject = verb.head
@@ -74,9 +74,9 @@ def get_SAO_en(sentence, model=nlp):
         
                 for obj in conj_obj:
                     try:
-                        obj_trunk = [nn for nn in nouns if obj in nn][0]
-                        if obj_trunk:
-                            objects.append(" ".join([w.text for w in obj_trunk if w.pos_!="DET"]))
+                        obj_chunk = [nn for nn in nouns if obj in nn][0]
+                        if obj_chunk:
+                            objects.append(" ".join([w.text for w in obj_chunk if w.pos_!="DET"]))
                     except IndexError:
                         continue
 
