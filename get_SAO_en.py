@@ -28,7 +28,7 @@ def get_SAO_en(sentence, model=nlp):
     for n in nouns_dobj:
         object = " ".join([w.text for w in n if w.pos_!="DET"])
         verb = n.root.head
-        if verb.dep_ == "conj" and verb.head.pos_ == "VERB":
+        if verb.dep_ in ["conj"] and verb.head.pos_ == "VERB":
             verb = verb.head
 
         subject = None
@@ -61,7 +61,7 @@ def get_SAO_en(sentence, model=nlp):
             except IndexError:
                 subject = subject.text
 
-            objects = [object] 
+            objects = [object]
 
             # check if object has other conjunct objects
             conj_obj = [child for child in n.root.children if child.dep_=="conj"]
@@ -86,10 +86,10 @@ def get_SAO_en(sentence, model=nlp):
 
     ############################# PART2 #############################
     # for passive form
-    passive_verbs = [w for w in doc if w.pos_ == "VERB" and [c for c in w.children if c.dep_ == "nsubjpass"]]
-    for verb in passive_verbs:
-        subject = [child for child in verb.children if child.dep_ == "nsubjpass"][-1]
+    passive_verbs = [w for w in doc if w.pos_ == "VERB" and [c for c in w.children if c.dep_ in ["nsubjpass", "agent"]]]
 
+    for verb in passive_verbs:
+        subject = [child for child in verb.children if child.dep_ in ["nsubjpass", "agent"]][-1]
         try:
             subject = [nn for nn in nouns if subject in nn][0]
             subject = " ".join([w.text for w in subject if w.pos_!="DET"])
